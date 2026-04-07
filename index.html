@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#000000">
-<meta charset="UTF-8">
+
 <title>Controle de Clientes</title>
 
 <style>
@@ -11,11 +13,13 @@ body {
   background: #0f172a;
   color: white;
   font-family: Arial;
-  padding: 15px;
+  padding: 10px;
+  margin: 0;
 }
 
 h1 {
   text-align: center;
+  font-size: 22px;
 }
 
 /* Card */
@@ -33,20 +37,15 @@ h1 {
   flex: 1;
   border: none;
   border-radius: 12px;
-  padding: 15px;
+  padding: 12px;
   color: white;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   text-align: left;
 }
 
-.pago {
-  background: green;
-}
-
-.nao-pago {
-  background: red;
-}
+.pago { background: green; }
+.nao-pago { background: red; }
 
 /* Info */
 .info {
@@ -58,16 +57,17 @@ h1 {
 .botoes {
   display: flex;
   flex-direction: column;
-  margin-left: 10px;
+  margin-left: 8px;
 }
 
 .botoes button {
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   border: none;
-  padding: 6px;
+  padding: 8px;
   border-radius: 6px;
   cursor: pointer;
   color: white;
+  font-size: 14px;
 }
 
 .btn-pago { background: green; }
@@ -84,27 +84,56 @@ h1 {
   display:none;
   justify-content:center;
   align-items:center;
+  padding: 10px;
 }
 
 .modal-content {
   background:#1e293b;
   padding:20px;
   border-radius:10px;
-  width:90%;
+  width:100%;
+  max-width:400px;
 }
 
-/* Add */
+/* Botão adicionar */
 .add-btn {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 15px;
+  right: 15px;
   background: blue;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  font-size: 30px;
+  width: 55px;
+  height: 55px;
+  font-size: 28px;
+}
+
+/* Botão instalar */
+#btnInstall {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: purple;
+  color: white;
+}
+
+/* 📱 Ajustes extras para telas pequenas */
+@media (max-width: 480px) {
+  h1 { font-size: 20px; }
+
+  .botao-grande {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .botoes button {
+    padding: 6px;
+    font-size: 12px;
+  }
 }
 </style>
 </head>
@@ -115,6 +144,7 @@ h1 {
 <div id="lista"></div>
 
 <button class="add-btn" onclick="adicionarCliente()">+</button>
+<button id="btnInstall" style="display:none;">📲 Instalar</button>
 
 <div class="modal" id="modal">
   <div class="modal-content" id="modalContent"></div>
@@ -134,8 +164,7 @@ function estaPago(c){
 
 function diasRestantes(c){
   let hoje = new Date();
-  let diaAtual = hoje.getDate();
-  return c.vencimento - diaAtual;
+  return c.vencimento - hoje.getDate();
 }
 
 function ordenar(){
@@ -174,49 +203,37 @@ function render(){
     let botoes = document.createElement("div");
     botoes.className="botoes";
 
-    let pago = document.createElement("button");
-    pago.innerText="✔";
-    pago.className="btn-pago";
-    pago.onclick=()=>{
-      c.ultimoPagamento = new Date();
-      salvar(); render();
-    };
-
-    let nao = document.createElement("button");
-    nao.innerText="✖";
-    nao.className="btn-nao";
-    nao.onclick=()=>{
-      c.ultimoPagamento=null;
-      salvar(); render();
-    };
-
-    let editar = document.createElement("button");
-    editar.innerText="✏";
-    editar.className="btn-editar";
-    editar.onclick=()=>editarCliente(i);
-
-    let apagar = document.createElement("button");
-    apagar.innerText="🗑";
-    apagar.className="btn-apagar";
-    apagar.onclick=()=>{
-      if(confirm("Apagar cliente?")){
-        clientes.splice(i,1);
-        salvar(); render();
-      }
-    };
-
-    botoes.append(pago,nao,editar,apagar);
+    botoes.innerHTML = `
+      <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
+      <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
+      <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
+      <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
+    `;
 
     div.append(btn,botoes);
     lista.appendChild(div);
   });
 }
 
-function abrirModal(c){
-  let m = document.getElementById("modal");
-  let content = document.getElementById("modalContent");
+function marcarPago(i){
+  clientes[i].ultimoPagamento = new Date();
+  salvar(); render();
+}
 
-  content.innerHTML=`
+function marcarNao(i){
+  clientes[i].ultimoPagamento = null;
+  salvar(); render();
+}
+
+function apagarCliente(i){
+  if(confirm("Apagar cliente?")){
+    clientes.splice(i,1);
+    salvar(); render();
+  }
+}
+
+function abrirModal(c){
+  document.getElementById("modalContent").innerHTML = `
     <h2>${c.nome}</h2><br>
     App1: ${c.app1}<br>
     App2: ${c.app2}<br>
@@ -225,8 +242,7 @@ function abrirModal(c){
     Vencimento: dia ${c.vencimento}<br><br>
     <button onclick="fecharModal()">Fechar</button>
   `;
-
-  m.style.display="flex";
+  document.getElementById("modal").style.display="flex";
 }
 
 function fecharModal(){
@@ -267,7 +283,31 @@ function salvar(){
   localStorage.setItem("clientes", JSON.stringify(clientes));
 }
 
+/* PWA install */
+let deferredPrompt;
+const btnInstall = document.getElementById("btnInstall");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  btnInstall.style.display = "block";
+});
+
+btnInstall.addEventListener("click", async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+    btnInstall.style.display = "none";
+  }
+});
+
+/* Service Worker */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+
 render();
+</script>
 <button id="btnInstall" style="display:none;">📲 Instalar App</button>
 <script>
 let deferredPrompt;
