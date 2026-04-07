@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#000000">
 <meta charset="UTF-8">
 <title>Controle de Clientes</title>
 
@@ -267,6 +269,52 @@ function salvar(){
 
 render();
 </script>
+<button id="btnInstall" class="btn-install">
+  <span class="icon">📲</span>
+  Instalar App
+</button>
 
+<style>
+.btn-install {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: bold;
+  
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  
+  transition: all 0.3s ease;
+}
+
+/* Hover (PC) */
+.btn-install:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* Clique */
+.btn-install:active {
+  transform: scale(0.95);
+}
+
+/* Ícone */
+.btn-install .icon {
+  font-size: 18px;
+}
+</style>
 </body>
 </html>
