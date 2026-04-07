@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Controle de Clientes</title>
+
+<style>
+body {
+  background: #0f172a;
+  color: white;
+  font-family: Arial;
+  padding: 15px;
+}
+
+h1 {
+  text-align: center;
+}
+
+/* Card */
+.cliente {
+  background: #1e293b;
+  border-radius: 15px;
+  padding: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+/* Botão principal */
+.botao-grande {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pago {
+  background: green;
+}
+
+.nao-pago {
+  background: red;
+}
+
+/* Info */
+.info {
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* Botões laterais */
+.botoes {
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+}
+
+.botoes button {
+  margin-bottom: 5px;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: white;
+}
+
+.btn-pago { background: green; }
+.btn-nao { background: red; }
+.btn-editar { background: orange; }
+.btn-apagar { background: #555; }
+
+/* Modal */
+.modal {
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.7);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content {
+  background:#1e293b;
+  padding:20px;
+  border-radius:10px;
+  width:90%;
+}
+
+/* Add */
+.add-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: blue;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 30px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📋 Clientes</h1>
+<div id="lista"></div>
+
+<button class="add-btn" onclick="adicionarCliente()">+</button>
+
+<div class="modal" id="modal">
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<script>
+let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
+
+function diasDesdePagamento(c){
+  if(!c.ultimoPagamento) return 999;
+  return Math.floor((new Date()-new Date(c.ultimoPagamento))/(1000*60*60*24));
+}
+
+function estaPago(c){
+  return diasDesdePagamento(c) <= 30;
+}
+
+function diasRestantes(c){
+  let hoje = new Date();
+  let diaAtual = hoje.getDate();
+  return c.vencimento - diaAtual;
+}
+
+function ordenar(){
+  clientes.sort((a,b)=>{
+    let pagoA = estaPago(a);
+    let pagoB = estaPago(b);
+
+    if(pagoA !== pagoB) return pagoA ? 1 : -1;
+    return diasRestantes(a) - diasRestantes(b);
+  });
+}
+
+function render(){
+  ordenar();
+  let lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  clientes.forEach((c,i)=>{
+
+    let div = document.createElement("div");
+    div.className="cliente";
+
+    let btn = document.createElement("button");
+    btn.className="botao-grande "+(estaPago(c)?"pago":"nao-pago");
+
+    let dias = diasRestantes(c);
+    let status = dias >= 0 ? `Faltam ${dias} dias` : `Atrasado ${Math.abs(dias)} dias`;
+
+    btn.innerHTML = `
+      <div>${c.nome}</div>
+      <div class="info">Vence dia ${c.vencimento} • ${status}</div>
+    `;
+
+    btn.onclick=()=>abrirModal(c);
+
+    let botoes = document.createElement("div");
+    botoes.className="botoes";
+
+    let pago = document.createElement("button");
+    pago.innerText="✔";
+    pago.className="btn-pago";
+    pago.onclick=()=>{
+      c.ultimoPagamento = new Date();
+      salvar(); render();
+    };
+
+    let nao = document.createElement("button");
+    nao.innerText="✖";
+    nao.className="btn-nao";
+    nao.onclick=()=>{
+      c.ultimoPagamento=null;
+      salvar(); render();
+    };
+
+    let editar = document.createElement("button");
+    editar.innerText="✏";
+    editar.className="btn-editar";
+    editar.onclick=()=>editarCliente(i);
+
+    let apagar = document.createElement("button");
+    apagar.innerText="🗑";
+    apagar.className="btn-apagar";
+    apagar.onclick=()=>{
+      if(confirm("Apagar cliente?")){
+        clientes.splice(i,1);
+        salvar(); render();
+      }
+    };
+
+    botoes.append(pago,nao,editar,apagar);
+
+    div.append(btn,botoes);
+    lista.appendChild(div);
+  });
+}
+
+function abrirModal(c){
+  let m = document.getElementById("modal");
+  let content = document.getElementById("modalContent");
+
+  content.innerHTML=`
+    <h2>${c.nome}</h2><br>
+    App1: ${c.app1}<br>
+    App2: ${c.app2}<br>
+    MAC: ${c.mac}<br>
+    Chave: ${c.chave}<br>
+    Vencimento: dia ${c.vencimento}<br><br>
+    <button onclick="fecharModal()">Fechar</button>
+  `;
+
+  m.style.display="flex";
+}
+
+function fecharModal(){
+  document.getElementById("modal").style.display="none";
+}
+
+function adicionarCliente(){
+  let nome = prompt("Nome:");
+  if(!nome) return;
+
+  clientes.push({
+    nome,
+    app1: prompt("App1:"),
+    app2: prompt("App2:"),
+    mac: prompt("MAC:"),
+    chave: prompt("Chave:"),
+    vencimento: parseInt(prompt("Dia de vencimento:")),
+    ultimoPagamento:null
+  });
+
+  salvar(); render();
+}
+
+function editarCliente(i){
+  let c = clientes[i];
+
+  c.nome = prompt("Nome:", c.nome);
+  c.app1 = prompt("App1:", c.app1);
+  c.app2 = prompt("App2:", c.app2);
+  c.mac = prompt("MAC:", c.mac);
+  c.chave = prompt("Chave:", c.chave);
+  c.vencimento = parseInt(prompt("Vencimento:", c.vencimento));
+
+  salvar(); render();
+}
+
+function salvar(){
+  localStorage.setItem("clientes", JSON.stringify(clientes));
+}
+
+render();
+</script>
+
+</body>
+</html>
