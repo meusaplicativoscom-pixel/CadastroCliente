@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#000000">
-
 <title>Controle de Clientes</title>
 
 <style>
@@ -16,6 +14,7 @@ body {
   font-family: Arial;
   padding: 10px;
   margin: 0;
+  padding-bottom: 90px; /* espaço para os botões flutuantes */
 }
 
 h1 {
@@ -75,6 +74,7 @@ h1 {
 .btn-nao { background: red; }
 .btn-editar { background: orange; }
 .btn-apagar { background: #555; }
+.btn-msg { background: #25D366; }
 
 /* Modal */
 .modal {
@@ -86,6 +86,7 @@ h1 {
   justify-content:center;
   align-items:center;
   padding: 10px;
+  z-index: 1000;
 }
 
 .modal-content {
@@ -94,23 +95,43 @@ h1 {
   border-radius:10px;
   width:100%;
   max-width:400px;
+  text-align: center;
 }
 
-/* Botão adicionar */
-.add-btn {
-  position: fixed;
-  bottom: 15px;
-  right: 15px;
-  background: blue;
-  color: white;
+.modal-content button {
+  width: 100%;
+  padding: 10px;
   border: none;
-  border-radius: 50%;
-  width: 55px;
-  height: 55px;
-  font-size: 28px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  cursor: pointer;
 }
 
-/* Botão instalar */
+/* Botões flutuantes em linha */
+.fab-container {
+  position: fixed;
+  bottom: 20px;
+  right: 15px;
+  display: flex;
+  gap: 10px; /* espaço entre os botões */
+  z-index: 999;
+}
+
+.fab {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.add-btn { background: blue; }
+.export { background: #0ea5e9; }
+.import { background: #22c55e; display: flex; align-items: center; justify-content: center; }
+
 #btnInstall {
   position: fixed;
   bottom: 15px;
@@ -122,36 +143,45 @@ h1 {
   color: white;
 }
 
-/* 📱 Ajustes extras para telas pequenas */
+/* Responsivo */
 @media (max-width: 480px) {
   h1 { font-size: 20px; }
-
-  .botao-grande {
-    font-size: 14px;
-    padding: 10px;
-  }
-
-  .botoes button {
-    padding: 6px;
-    font-size: 12px;
-  }
+  .botao-grande { font-size: 14px; padding: 10px; }
+  .botoes button { padding: 6px; font-size: 12px; }
 }
 </style>
 </head>
 
 <body>
-
 <h1>📋 Clientes</h1>
 <div id="lista"></div>
 
-<button class="add-btn" onclick="adicionarCliente()">+</button>
+<!-- Botões flutuantes em linha -->
+<div class="fab-container">
+  <label class="fab import">
+    📥
+    <input type="file" onchange="importarClientes(event)" hidden>
+  </label>
+  <button class="fab export" onclick="exportarClientes()">📤</button>
+  <button class="fab add-btn" onclick="adicionarCliente()">+</button>
+</div>
+
 <button id="btnInstall" style="display:none;">📲 Instalar</button>
-<button onclick="exportarClientes()">📤 Exportar</button>
 
-<input type="file" onchange="importarClientes(event)">
-
+<!-- Modal detalhes -->
 <div class="modal" id="modal">
   <div class="modal-content" id="modalContent"></div>
+</div>
+
+<!-- Modal mensagens -->
+<div class="modal" id="modalMsg">
+  <div class="modal-content">
+    <h3>Enviar mensagem</h3><br>
+    <button onclick="enviarWhats(1)">📩 Vence amanhã</button>
+    <button onclick="enviarWhats(2)">📩 Vence em 2 dias</button>
+    <button onclick="enviarWhats(3)">📩 Em atraso</button>
+    <button onclick="fecharModalMsg()">Fechar</button>
+  </div>
 </div>
 
 <script>
@@ -161,21 +191,13 @@ function diasDesdePagamento(c){
   if(!c.ultimoPagamento) return 999;
   return Math.floor((new Date()-new Date(c.ultimoPagamento))/(1000*60*60*24));
 }
-
-function estaPago(c){
-  return diasDesdePagamento(c) <= 30;
-}
-
-function diasRestantes(c){
-  let hoje = new Date();
-  return c.vencimento - hoje.getDate();
-}
+function estaPago(c){ return diasDesdePagamento(c) <= 30; }
+function diasRestantes(c){ return c.vencimento - new Date().getDate(); }
 
 function ordenar(){
   clientes.sort((a,b)=>{
     let pagoA = estaPago(a);
     let pagoB = estaPago(b);
-
     if(pagoA !== pagoB) return pagoA ? 1 : -1;
     return diasRestantes(a) - diasRestantes(b);
   });
@@ -185,56 +207,34 @@ function render(){
   ordenar();
   let lista = document.getElementById("lista");
   lista.innerHTML = "";
-
   clientes.forEach((c,i)=>{
-
     let div = document.createElement("div");
     div.className="cliente";
 
     let btn = document.createElement("button");
     btn.className="botao-grande "+(estaPago(c)?"pago":"nao-pago");
-
     let dias = diasRestantes(c);
     let status = dias >= 0 ? `Faltam ${dias} dias` : `Atrasado ${Math.abs(dias)} dias`;
-
-    btn.innerHTML = `
-      <div>${c.nome}</div>
-      <div class="info">Vence dia ${c.vencimento} • ${status}</div>
-    `;
-
+    btn.innerHTML = `<div>${c.nome}</div><div class="info">Vence dia ${c.vencimento} • ${status}</div>`;
     btn.onclick=()=>abrirModal(c);
 
     let botoes = document.createElement("div");
     botoes.className="botoes";
-
     botoes.innerHTML = `
       <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
       <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
       <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
       <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
+      <button class="btn-msg" onclick="abrirModalMsg()">📩</button>
     `;
-
     div.append(btn,botoes);
     lista.appendChild(div);
   });
 }
 
-function marcarPago(i){
-  clientes[i].ultimoPagamento = new Date();
-  salvar(); render();
-}
-
-function marcarNao(i){
-  clientes[i].ultimoPagamento = null;
-  salvar(); render();
-}
-
-function apagarCliente(i){
-  if(confirm("Apagar cliente?")){
-    clientes.splice(i,1);
-    salvar(); render();
-  }
-}
+function marcarPago(i){ clientes[i].ultimoPagamento = new Date(); salvar(); render(); }
+function marcarNao(i){ clientes[i].ultimoPagamento = null; salvar(); render(); }
+function apagarCliente(i){ if(confirm("Apagar cliente?")){ clientes.splice(i,1); salvar(); render(); } }
 
 function abrirModal(c){
   document.getElementById("modalContent").innerHTML = `
@@ -248,15 +248,21 @@ function abrirModal(c){
   `;
   document.getElementById("modal").style.display="flex";
 }
+function fecharModal(){ document.getElementById("modal").style.display="none"; }
 
-function fecharModal(){
-  document.getElementById("modal").style.display="none";
+function abrirModalMsg(){ document.getElementById("modalMsg").style.display = "flex"; }
+function fecharModalMsg(){ document.getElementById("modalMsg").style.display = "none"; }
+function enviarWhats(tipo){
+  let msg="";
+  if(tipo===1) msg="Prezado cliente, sua assinatura vence amanhã.";
+  else if(tipo===2) msg="Prezado cliente, sua assinatura vence em 2 dias.";
+  else if(tipo===3) msg="Prezado cliente, sua assinatura está em ATRASO!";
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
+  fecharModalMsg();
 }
 
 function adicionarCliente(){
-  let nome = prompt("Nome:");
-  if(!nome) return;
-
+  let nome = prompt("Nome:"); if(!nome) return;
   clientes.push({
     nome,
     app1: prompt("App1:"),
@@ -266,105 +272,54 @@ function adicionarCliente(){
     vencimento: parseInt(prompt("Dia de vencimento:")),
     ultimoPagamento:null
   });
-
   salvar(); render();
 }
 
 function editarCliente(i){
   let c = clientes[i];
-
-  c.nome = prompt("Nome:", c.nome);
-  c.app1 = prompt("App1:", c.app1);
-  c.app2 = prompt("App2:", c.app2);
-  c.mac = prompt("MAC:", c.mac);
-  c.chave = prompt("Chave:", c.chave);
-  c.vencimento = parseInt(prompt("Vencimento:", c.vencimento));
-
+  c.nome=prompt("Nome:",c.nome);
+  c.app1=prompt("App1:",c.app1);
+  c.app2=prompt("App2:",c.app2);
+  c.mac=prompt("MAC:",c.mac);
+  c.chave=prompt("Chave:",c.chave);
+  c.vencimento=parseInt(prompt("Vencimento:",c.vencimento));
   salvar(); render();
 }
 
-function salvar(){
-  localStorage.setItem("clientes", JSON.stringify(clientes));
-}
-// EXPORTAR clientes
+function salvar(){ localStorage.setItem("clientes",JSON.stringify(clientes)); }
 function exportarClientes(){
-  const dados = JSON.stringify(clientes);
-  const blob = new Blob([dados], {type: "application/json"});
-  
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "clientes.json";
+  const dados=JSON.stringify(clientes);
+  const blob=new Blob([dados],{type:"application/json"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="clientes.json";
   link.click();
 }
-
-// IMPORTAR clientes
 function importarClientes(event){
-  const file = event.target.files[0];
-  if(!file) return;
-
-  const reader = new FileReader();
-
-  reader.onload = function(e){
-    try {
-      const novos = JSON.parse(e.target.result);
-
-      let adicionados = 0;
-
-      novos.forEach(novo => {
-
-        // verifica se já existe (usando MAC como identificador)
-        const existe = clientes.some(c => c.mac === novo.mac);
-
-        if(!existe){
-          clientes.push(novo);
-          adicionados++;
-        }
-
-      });
-
-      salvar();
-      render();
-
-      alert(adicionados + " clientes novos adicionados!");
-    } catch {
-      alert("Erro ao importar arquivo!");
-    }
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const novos=JSON.parse(e.target.result);
+      novos.forEach(novo=>{ if(!clientes.some(c=>c.mac===novo.mac)) clientes.push(novo); });
+      salvar(); render(); alert("Importação concluída!");
+    }catch{ alert("Erro ao importar arquivo!"); }
   };
-
   reader.readAsText(file);
 }
 
 /* Service Worker */
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js"); }
 
-render();
-</script>
-
-<script>
+/* Instalar app */
 let deferredPrompt;
 const btnInstall = document.getElementById("btnInstall");
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  btnInstall.style.display = "block"; // mostra o botão
+window.addEventListener("beforeinstallprompt",(e)=>{ e.preventDefault(); deferredPrompt=e; btnInstall.style.display="block"; });
+btnInstall.addEventListener("click", async()=>{
+  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; btnInstall.style.display="none"; }
 });
 
-btnInstall.addEventListener("click", async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log("Resultado da instalação:", outcome);
-    deferredPrompt = null;
-    btnInstall.style.display = "none";
-  }
-});
-
-// Registrar o Service Worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
+render();
 </script>
 </body>
 </html>
