@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -145,6 +146,9 @@ h1 {
 
 <button class="add-btn" onclick="adicionarCliente()">+</button>
 <button id="btnInstall" style="display:none;">📲 Instalar</button>
+<button onclick="exportarClientes()">📤 Exportar</button>
+
+<input type="file" onchange="importarClientes(event)">
 
 <div class="modal" id="modal">
   <div class="modal-content" id="modalContent"></div>
@@ -282,24 +286,37 @@ function editarCliente(i){
 function salvar(){
   localStorage.setItem("clientes", JSON.stringify(clientes));
 }
+// EXPORTAR clientes
+function exportarClientes(){
+  const dados = JSON.stringify(clientes);
+  const blob = new Blob([dados], {type: "application/json"});
+  
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "clientes.json";
+  link.click();
+}
 
-/* PWA install */
-let deferredPrompt;
-const btnInstall = document.getElementById("btnInstall");
+// IMPORTAR clientes
+function importarClientes(event){
+  const file = event.target.files[0];
+  if(!file) return;
 
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  btnInstall.style.display = "block";
-});
+  const reader = new FileReader();
 
-btnInstall.addEventListener("click", async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt = null;
-    btnInstall.style.display = "none";
-  }
-});
+  reader.onload = function(e){
+    try {
+      clientes = JSON.parse(e.target.result);
+      salvar();
+      render();
+      alert("Clientes importados com sucesso!");
+    } catch {
+      alert("Erro ao importar arquivo!");
+    }
+  };
+
+  reader.readAsText(file);
+}
 
 /* Service Worker */
 if ("serviceWorker" in navigator) {
@@ -308,7 +325,7 @@ if ("serviceWorker" in navigator) {
 
 render();
 </script>
-<button id="btnInstall" style="display:none;">📲 Instalar App</button>
+
 <script>
 let deferredPrompt;
 const btnInstall = document.getElementById("btnInstall");
