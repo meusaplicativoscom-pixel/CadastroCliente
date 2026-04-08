@@ -306,10 +306,26 @@ function importarClientes(event){
 
   reader.onload = function(e){
     try {
-      clientes = JSON.parse(e.target.result);
+      const novos = JSON.parse(e.target.result);
+
+      let adicionados = 0;
+
+      novos.forEach(novo => {
+
+        // verifica se já existe (usando MAC como identificador)
+        const existe = clientes.some(c => c.mac === novo.mac);
+
+        if(!existe){
+          clientes.push(novo);
+          adicionados++;
+        }
+
+      });
+
       salvar();
       render();
-      alert("Clientes importados com sucesso!");
+
+      alert(adicionados + " clientes novos adicionados!");
     } catch {
       alert("Erro ao importar arquivo!");
     }
