@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -75,6 +76,7 @@ h1 {
 .btn-editar { background: orange; }
 .btn-apagar { background: #555; }
 .btn-msg { background: #25D366; }
+.btn-obs { background: #a855f7; }
 
 /* Modal */
 .modal {
@@ -174,6 +176,20 @@ h1 {
 </div>
 
 <!-- Modal mensagens -->
+<div class="modal" id="modalObs">
+  <div class="modal-content">
+    <h3>Observações</h3><br>
+
+    <textarea id="campoObs" 
+      style="width:100%;height:120px;border-radius:8px;padding:10px;">
+    </textarea>
+
+    <br><br>
+
+    <button onclick="salvarObservacao()">💾 Salvar</button>
+    <button onclick="fecharModalObs()">Fechar</button>
+  </div>
+</div>
 <div class="modal" id="modalMsg">
   <div class="modal-content">
     <h3>Enviar mensagem</h3><br>
@@ -221,12 +237,13 @@ function render(){
     let botoes = document.createElement("div");
     botoes.className="botoes";
     botoes.innerHTML = `
-      <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
-      <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
-      <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
-      <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
-      <button class="btn-msg" onclick="abrirModalMsg()">📩</button>
-    `;
+  <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
+  <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
+  <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
+  <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
+  <button class="btn-msg" onclick="abrirModalMsg()">📩</button>
+  <button class="btn-obs" onclick="abrirObservacao(${i})">📝</button>
+`;
     div.append(btn,botoes);
     lista.appendChild(div);
   });
@@ -318,7 +335,31 @@ window.addEventListener("beforeinstallprompt",(e)=>{ e.preventDefault(); deferre
 btnInstall.addEventListener("click", async()=>{
   if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; btnInstall.style.display="none"; }
 });
+let clienteObsIndex = null;
 
+function abrirObservacao(i){
+  clienteObsIndex = i;
+
+  let c = clientes[i];
+
+  document.getElementById("campoObs").value = c.obs || "";
+
+  document.getElementById("modalObs").style.display = "flex";
+}
+
+function fecharModalObs(){
+  document.getElementById("modalObs").style.display = "none";
+}
+
+function salvarObservacao(){
+  if(clienteObsIndex !== null){
+    clientes[clienteObsIndex].obs =
+      document.getElementById("campoObs").value;
+
+    salvar();
+    fecharModalObs();
+  }
+}
 render();
 </script>
 </body>
