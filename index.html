@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -203,12 +204,29 @@ h1 {
 <script>
 let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
 
-function diasDesdePagamento(c){
-  if(!c.ultimoPagamento) return 999;
-  return Math.floor((new Date()-new Date(c.ultimoPagamento))/(1000*60*60*24));
+function estaPago(c){
+  if(!c.ultimoPagamento) return false;
+
+  let hoje = new Date();
+  let ultimo = new Date(c.ultimoPagamento);
+
+  return (
+    ultimo.getMonth() === hoje.getMonth() &&
+    ultimo.getFullYear() === hoje.getFullYear()
+  );
 }
-function estaPago(c){ return diasDesdePagamento(c) <= 30; }
-function diasRestantes(c){ return c.vencimento - new Date().getDate(); }
+
+function diasRestantes(c){
+  let hoje = new Date();
+  let diaHoje = hoje.getDate();
+
+  if(c.vencimento >= diaHoje){
+    return c.vencimento - diaHoje;
+  } else {
+    let diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+    return (diasNoMes - diaHoje) + c.vencimento;
+  }
+}
 
 function ordenar(){
   clientes.sort((a,b)=>{
@@ -223,35 +241,57 @@ function render(){
   ordenar();
   let lista = document.getElementById("lista");
   lista.innerHTML = "";
+
   clientes.forEach((c,i)=>{
     let div = document.createElement("div");
     div.className="cliente";
 
     let btn = document.createElement("button");
     btn.className="botao-grande "+(estaPago(c)?"pago":"nao-pago");
+
     let dias = diasRestantes(c);
     let status = dias >= 0 ? `Faltam ${dias} dias` : `Atrasado ${Math.abs(dias)} dias`;
-    btn.innerHTML = `<div>${c.nome}</div><div class="info">Vence dia ${c.vencimento} • ${status}</div>`;
+
+    btn.innerHTML = `<div>${c.nome}</div>
+    <div class="info">Vence dia ${c.vencimento} • ${status}</div>`;
+
     btn.onclick=()=>abrirModal(c);
 
     let botoes = document.createElement("div");
     botoes.className="botoes";
     botoes.innerHTML = `
-  <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
-  <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
-  <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
-  <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
-  <button class="btn-msg" onclick="abrirModalMsg()">📩</button>
-  <button class="btn-obs" onclick="abrirObservacao(${i})">📝</button>
-`;
+      <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
+      <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
+      <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
+      <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
+      <button class="btn-msg" onclick="abrirModalMsg(${i})">📩</button>
+      <button class="btn-obs" onclick="abrirObservacao(${i})">📝</button>
+    `;
+
     div.append(btn,botoes);
     lista.appendChild(div);
   });
 }
 
-function marcarPago(i){ clientes[i].ultimoPagamento = new Date(); salvar(); render(); }
-function marcarNao(i){ clientes[i].ultimoPagamento = null; salvar(); render(); }
-function apagarCliente(i){ if(confirm("Apagar cliente?")){ clientes.splice(i,1); salvar(); render(); } }
+function marcarPago(i){
+  clientes[i].ultimoPagamento = new Date().toISOString();
+  salvar();
+  render();
+}
+
+function marcarNao(i){
+  clientes[i].ultimoPagamento = null;
+  salvar();
+  render();
+}
+
+function apagarCliente(i){
+  if(confirm("Apagar cliente?")){
+    clientes.splice(i,1);
+    salvar();
+    render();
+  }
+}
 
 function abrirModal(c){
   document.getElementById("modalContent").innerHTML = `
@@ -265,21 +305,41 @@ function abrirModal(c){
   `;
   document.getElementById("modal").style.display="flex";
 }
-function fecharModal(){ document.getElementById("modal").style.display="none"; }
 
-function abrirModalMsg(){ document.getElementById("modalMsg").style.display = "flex"; }
-function fecharModalMsg(){ document.getElementById("modalMsg").style.display = "none"; }
+function fecharModal(){
+  document.getElementById("modal").style.display="none";
+}
+
+let clienteMsgIndex = null;
+
+function abrirModalMsg(i){
+  clienteMsgIndex = i;
+  document.getElementById("modalMsg").style.display = "flex";
+}
+
+function fecharModalMsg(){
+  document.getElementById("modalMsg").style.display = "none";
+}
+
 function enviarWhats(tipo){
+  if(clienteMsgIndex === null) return;
+
+  let c = clientes[clienteMsgIndex];
   let msg="";
-  if(tipo===1) msg="Prezado cliente, sua assinatura vence amanhã.";
-  else if(tipo===2) msg="Prezado cliente, sua assinatura vence em 2 dias.";
-  else if(tipo===3) msg="Prezado cliente, sua assinatura está em ATRASO!";
+
+  if(tipo===1) msg=`Olá ${c.nome}, sua assinatura vence amanhã.`;
+  else if(tipo===2) msg=`Olá ${c.nome}, sua assinatura vence em 2 dias.`;
+  else if(tipo===3) msg=`Olá ${c.nome}, sua assinatura está em ATRASO!`;
+
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
+
   fecharModalMsg();
 }
 
 function adicionarCliente(){
-  let nome = prompt("Nome:"); if(!nome) return;
+  let nome = prompt("Nome:");
+  if(!nome) return;
+
   clientes.push({
     nome,
     app1: prompt("App1:"),
@@ -287,23 +347,32 @@ function adicionarCliente(){
     mac: prompt("MAC:"),
     chave: prompt("Chave:"),
     vencimento: parseInt(prompt("Dia de vencimento:")),
-    ultimoPagamento:null
+    ultimoPagamento:null,
+    obs:""
   });
-  salvar(); render();
+
+  salvar();
+  render();
 }
 
 function editarCliente(i){
   let c = clientes[i];
+
   c.nome=prompt("Nome:",c.nome);
   c.app1=prompt("App1:",c.app1);
   c.app2=prompt("App2:",c.app2);
   c.mac=prompt("MAC:",c.mac);
   c.chave=prompt("Chave:",c.chave);
   c.vencimento=parseInt(prompt("Vencimento:",c.vencimento));
-  salvar(); render();
+
+  salvar();
+  render();
 }
 
-function salvar(){ localStorage.setItem("clientes",JSON.stringify(clientes)); }
+function salvar(){
+  localStorage.setItem("clientes",JSON.stringify(clientes));
+}
+
 function exportarClientes(){
   const dados=JSON.stringify(clientes);
   const blob=new Blob([dados],{type:"application/json"});
@@ -312,36 +381,41 @@ function exportarClientes(){
   link.download="clientes.json";
   link.click();
 }
+
 function importarClientes(event){
-  const file=event.target.files[0]; if(!file) return;
+  const file=event.target.files[0];
+  if(!file) return;
+
   const reader=new FileReader();
+
   reader.onload=function(e){
     try{
       const novos=JSON.parse(e.target.result);
-      novos.forEach(novo=>{ if(!clientes.some(c=>c.mac===novo.mac)) clientes.push(novo); });
-      salvar(); render(); alert("Importação concluída!");
-    }catch{ alert("Erro ao importar arquivo!"); }
+
+      novos.forEach(novo=>{
+        if(!clientes.some(c=>c.mac===novo.mac)){
+          clientes.push(novo);
+        }
+      });
+
+      salvar();
+      render();
+      alert("Importação concluída!");
+    }catch{
+      alert("Erro ao importar arquivo!");
+    }
   };
+
   reader.readAsText(file);
 }
 
-/* Service Worker */
-if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js"); }
-
-/* Instalar app */
-let deferredPrompt;
-const btnInstall = document.getElementById("btnInstall");
-window.addEventListener("beforeinstallprompt",(e)=>{ e.preventDefault(); deferredPrompt=e; btnInstall.style.display="block"; });
-btnInstall.addEventListener("click", async()=>{
-  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt=null; btnInstall.style.display="none"; }
-});
+/* OBS */
 let clienteObsIndex = null;
 
 function abrirObservacao(i){
   clienteObsIndex = i;
 
   let c = clientes[i];
-
   document.getElementById("campoObs").value = c.obs || "";
 
   document.getElementById("modalObs").style.display = "flex";
@@ -360,6 +434,30 @@ function salvarObservacao(){
     fecharModalObs();
   }
 }
+
+/* Service Worker */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+
+/* Instalar app */
+let deferredPrompt;
+const btnInstall = document.getElementById("btnInstall");
+
+window.addEventListener("beforeinstallprompt",(e)=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  btnInstall.style.display="block";
+});
+
+btnInstall.addEventListener("click", async()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt=null;
+    btnInstall.style.display="none";
+  }
+});
+
 render();
 </script>
 </body>
