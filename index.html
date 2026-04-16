@@ -1,24 +1,4 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>ClientesMudancas</title>
-<style>
-body{
-  background:#f0f0f0;
-  text-align:center;
-}
-h1{
-  color:blue;
-}
-  
-</style>
-</head>
-<body>
-
-
-
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -32,9 +12,9 @@ body {
   background: #0f172a;
   color: white;
   font-family: Arial;
-  padding: 10px;
   margin: 0;
-  padding-bottom: 90px; /* espaço para os botões flutuantes */
+  padding: 10px;
+  padding-bottom: 90px;
 }
 
 h1 {
@@ -42,7 +22,6 @@ h1 {
   font-size: 22px;
 }
 
-/* Card */
 .cliente {
   background: #1e293b;
   border-radius: 15px;
@@ -52,7 +31,6 @@ h1 {
   align-items: center;
 }
 
-/* Botão principal */
 .botao-grande {
   flex: 1;
   border: none;
@@ -67,13 +45,11 @@ h1 {
 .pago { background: green; }
 .nao-pago { background: red; }
 
-/* Info */
 .info {
   font-size: 12px;
   margin-top: 5px;
 }
 
-/* Botões laterais */
 .botoes {
   display: flex;
   flex-direction: column;
@@ -97,7 +73,6 @@ h1 {
 .btn-msg { background: #25D366; }
 .btn-obs { background: #a855f7; }
 
-/* Modal */
 .modal {
   position: fixed;
   top:0; left:0;
@@ -125,18 +100,15 @@ h1 {
   border: none;
   border-radius: 8px;
   margin-bottom: 8px;
-  font-size: 14px;
   cursor: pointer;
 }
 
-/* Botões flutuantes em linha */
 .fab-container {
   position: fixed;
   bottom: 20px;
   right: 15px;
   display: flex;
-  gap: 10px; /* espaço entre os botões */
-  z-index: 999;
+  gap: 10px;
 }
 
 .fab {
@@ -163,21 +135,14 @@ h1 {
   background: purple;
   color: white;
 }
-
-/* Responsivo */
-@media (max-width: 480px) {
-  h1 { font-size: 20px; }
-  .botao-grande { font-size: 14px; padding: 10px; }
-  .botoes button { padding: 6px; font-size: 12px; }
-}
 </style>
 </head>
 
 <body>
+
 <h1>📋 Clientes</h1>
 <div id="lista"></div>
 
-<!-- Botões flutuantes em linha -->
 <div class="fab-container">
   <label class="fab import">
     📥
@@ -189,33 +154,17 @@ h1 {
 
 <button id="btnInstall" style="display:none;">📲 Instalar</button>
 
-<!-- Modal detalhes -->
 <div class="modal" id="modal">
   <div class="modal-content" id="modalContent"></div>
 </div>
 
-<!-- Modal mensagens -->
 <div class="modal" id="modalObs">
   <div class="modal-content">
-    <h3>Observações</h3><br>
-
-    <textarea id="campoObs" 
-      style="width:100%;height:120px;border-radius:8px;padding:10px;">
-    </textarea>
-
+    <h3>Observações</h3>
+    <textarea id="campoObs" style="width:100%;height:120px;"></textarea>
     <br><br>
-
-    <button onclick="salvarObservacao()">💾 Salvar</button>
+    <button onclick="salvarObservacao()">Salvar</button>
     <button onclick="fecharModalObs()">Fechar</button>
-  </div>
-</div>
-<div class="modal" id="modalMsg">
-  <div class="modal-content">
-    <h3>Enviar mensagem</h3><br>
-    <button onclick="enviarWhats(1)">📩 Vence amanhã</button>
-    <button onclick="enviarWhats(2)">📩 Vence em 2 dias</button>
-    <button onclick="enviarWhats(3)">📩 Em atraso</button>
-    <button onclick="fecharModalMsg()">Fechar</button>
   </div>
 </div>
 
@@ -224,23 +173,15 @@ let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
 
 function estaPago(c){
   if(!c.ultimoPagamento) return false;
-
   let hoje = new Date();
   let ultimo = new Date(c.ultimoPagamento);
-
-  return (
-    ultimo.getMonth() === hoje.getMonth() &&
-    ultimo.getFullYear() === hoje.getFullYear()
-  );
+  return ultimo.getMonth() === hoje.getMonth() &&
+         ultimo.getFullYear() === hoje.getFullYear();
 }
+
 function diasRestantes(c){
-  let hoje = new Date();
-  let diaHoje = hoje.getDate();
-
-  let diff = c.vencimento - diaHoje;
-
-  // Se passou do vencimento → atraso (negativo)
-  return diff;
+  let hoje = new Date().getDate();
+  return c.vencimento - hoje;
 }
 
 function ordenar(){
@@ -258,49 +199,47 @@ function render(){
   lista.innerHTML = "";
 
   clientes.forEach((c,i)=>{
+    let dias = diasRestantes(c);
+
     let div = document.createElement("div");
     div.className="cliente";
 
     let btn = document.createElement("button");
+
     if(estaPago(c)){
-  btn.className = "botao-grande pago";
-}else{
-  if(dias === 0){
-    btn.className = "botao-grande";
-    btn.style.background = "orange";
-  }else{
-    btn.className = "botao-grande nao-pago";
-  }
-}
+      btn.className = "botao-grande pago";
+    } else {
+      if(dias === 0){
+        btn.className = "botao-grande";
+        btn.style.background = "orange";
+      } else {
+        btn.className = "botao-grande nao-pago";
+      }
+    }
 
- let pago = estaPago(c);
-let status = "";
+    let status="";
+    if(estaPago(c)){
+      status="Em dia ✅";
+    }else if(dias===0){
+      status="⚠️ Vence hoje";
+    }else if(dias>0){
+      status=`Faltam ${dias} dias`;
+    }else{
+      status=`❌ Atrasado ${Math.abs(dias)} dias`;
+    }
 
-if(pago){
-  status = "Em dia ✅";
-}else{
-  if(dias === 0){
-    status = "⚠️ Vence hoje";
-  }else if(dias > 0){
-    status = `Faltam ${dias} dias`;
-  }else{
-    status = `❌ Atrasado ${Math.abs(dias)} dias`;
-  }
-}
-    btn.innerHTML = `<div>${c.nome}</div>
-    <div class="info">Vence dia ${c.vencimento} • ${status}</div>`;
-
-    btn.onclick=()=>abrirModal(c);
+    btn.innerHTML = `
+      <div>${c.nome}</div>
+      <div class="info">Vence dia ${c.vencimento} • ${status}</div>
+    `;
 
     let botoes = document.createElement("div");
     botoes.className="botoes";
     botoes.innerHTML = `
-      <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
-      <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
-      <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
-      <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
-      <button class="btn-msg" onclick="abrirModalMsg(${i})">📩</button>
-      <button class="btn-obs" onclick="abrirObservacao(${i})">📝</button>
+      <button onclick="marcarPago(${i})">✔</button>
+      <button onclick="marcarNao(${i})">✖</button>
+      <button onclick="editarCliente(${i})">✏</button>
+      <button onclick="apagarCliente(${i})">🗑</button>
     `;
 
     div.append(btn,botoes);
@@ -310,65 +249,19 @@ if(pago){
 
 function marcarPago(i){
   clientes[i].ultimoPagamento = new Date().toISOString();
-  salvar();
-  render();
+  salvar(); render();
 }
 
 function marcarNao(i){
   clientes[i].ultimoPagamento = null;
-  salvar();
-  render();
+  salvar(); render();
 }
 
 function apagarCliente(i){
   if(confirm("Apagar cliente?")){
     clientes.splice(i,1);
-    salvar();
-    render();
+    salvar(); render();
   }
-}
-
-function abrirModal(c){
-  document.getElementById("modalContent").innerHTML = `
-    <h2>${c.nome}</h2><br>
-    App1: ${c.app1}<br>
-    App2: ${c.app2}<br>
-    MAC: ${c.mac}<br>
-    Chave: ${c.chave}<br>
-    Vencimento: dia ${c.vencimento}<br><br>
-    <button onclick="fecharModal()">Fechar</button>
-  `;
-  document.getElementById("modal").style.display="flex";
-}
-
-function fecharModal(){
-  document.getElementById("modal").style.display="none";
-}
-
-let clienteMsgIndex = null;
-
-function abrirModalMsg(i){
-  clienteMsgIndex = i;
-  document.getElementById("modalMsg").style.display = "flex";
-}
-
-function fecharModalMsg(){
-  document.getElementById("modalMsg").style.display = "none";
-}
-
-function enviarWhats(tipo){
-  if(clienteMsgIndex === null) return;
-
-  let c = clientes[clienteMsgIndex];
-  let msg="";
-
-  if(tipo===1) msg=`Olá ${c.nome}, sua assinatura vence amanhã.`;
-  else if(tipo===2) msg=`Olá ${c.nome}, sua assinatura vence em 2 dias.`;
-  else if(tipo===3) msg=`Olá ${c.nome}, sua assinatura está em ATRASO!`;
-
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
-
-  fecharModalMsg();
 }
 
 function adicionarCliente(){
@@ -377,31 +270,18 @@ function adicionarCliente(){
 
   clientes.push({
     nome,
-    app1: prompt("App1:"),
-    app2: prompt("App2:"),
-    mac: prompt("MAC:"),
-    chave: prompt("Chave:"),
     vencimento: parseInt(prompt("Dia de vencimento:")),
-    ultimoPagamento:null,
-    obs:""
+    ultimoPagamento:null
   });
 
-  salvar();
-  render();
+  salvar(); render();
 }
 
 function editarCliente(i){
   let c = clientes[i];
-
-  c.nome=prompt("Nome:",c.nome);
-  c.app1=prompt("App1:",c.app1);
-  c.app2=prompt("App2:",c.app2);
-  c.mac=prompt("MAC:",c.mac);
-  c.chave=prompt("Chave:",c.chave);
-  c.vencimento=parseInt(prompt("Vencimento:",c.vencimento));
-
-  salvar();
-  render();
+  c.nome = prompt("Nome:",c.nome);
+  c.vencimento = parseInt(prompt("Vencimento:",c.vencimento));
+  salvar(); render();
 }
 
 function salvar(){
@@ -409,100 +289,32 @@ function salvar(){
 }
 
 function exportarClientes(){
-  const dados=JSON.stringify(clientes);
-  const blob=new Blob([dados],{type:"application/json"});
+  const blob=new Blob([JSON.stringify(clientes)],{type:"application/json"});
   const link=document.createElement("a");
   link.href=URL.createObjectURL(blob);
   link.download="clientes.json";
   link.click();
 }
 
-function importarClientes(event){
-  const file=event.target.files[0];
+function importarClientes(e){
+  const file=e.target.files[0];
   if(!file) return;
 
   const reader=new FileReader();
-
-  reader.onload=function(e){
+  reader.onload=(ev)=>{
     try{
-      const novos=JSON.parse(e.target.result);
-
-      novos.forEach(novo=>{
-        if(!clientes.some(c=>c.mac===novo.mac)){
-          clientes.push(novo);
-        }
-      });
-
-      salvar();
-      render();
-      alert("Importação concluída!");
+      let novos=JSON.parse(ev.target.result);
+      clientes = clientes.concat(novos);
+      salvar(); render();
     }catch{
-      alert("Erro ao importar arquivo!");
+      alert("Erro ao importar!");
     }
   };
-
   reader.readAsText(file);
 }
 
-/* OBS */
-let clienteObsIndex = null;
-
-function abrirObservacao(i){
-  clienteObsIndex = i;
-
-  let c = clientes[i];
-  document.getElementById("campoObs").value = c.obs || "";
-
-  document.getElementById("modalObs").style.display = "flex";
-}
-
-function fecharModalObs(){
-  document.getElementById("modalObs").style.display = "none";
-}
-
-function salvarObservacao(){
-  if(clienteObsIndex !== null){
-    clientes[clienteObsIndex].obs =
-      document.getElementById("campoObs").value;
-
-    salvar();
-    fecharModalObs();
-  }
-}
-
-/* Service Worker */
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js");
-}
-
-/* Instalar app */
-let deferredPrompt;
-const btnInstall = document.getElementById("btnInstall");
-
-window.addEventListener("beforeinstallprompt",(e)=>{
-  e.preventDefault();
-  deferredPrompt=e;
-  btnInstall.style.display="block";
-});
-
-btnInstall.addEventListener("click", async()=>{
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    deferredPrompt=null;
-    btnInstall.style.display="none";
-  }
-});
-
 render();
 </script>
-</body>
-</html>
-
-<script>
-console.log("Funcionando!");
-  
-</script>
 
 </body>
 </html>
-  
