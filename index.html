@@ -66,10 +66,10 @@ h1 {
   font-size: 14px;
 }
 
-.btn-pago { background: green; }
-.btn-nao { background: red; }
-.btn-editar { background: orange; }
-.btn-apagar { background: #555; }
+.btn-pago { background: #22c55e; }   /* verde */
+.btn-nao { background: #ef4444; }    /* vermelho */
+.btn-editar { background: #f59e0b; } /* amarelo */
+.btn-apagar { background: #64748b; } /* cinza */
 .btn-msg { background: #25D366; }
 .btn-obs { background: #a855f7; }
 
@@ -236,11 +236,11 @@ function render(){
     let botoes = document.createElement("div");
     botoes.className="botoes";
     botoes.innerHTML = `
-      <button onclick="marcarPago(${i})">✔</button>
-      <button onclick="marcarNao(${i})">✖</button>
-      <button onclick="editarCliente(${i})">✏</button>
-      <button onclick="apagarCliente(${i})">🗑</button>
-    `;
+  <button class="btn-pago" onclick="marcarPago(${i})">✔</button>
+  <button class="btn-nao" onclick="marcarNao(${i})">✖</button>
+  <button class="btn-editar" onclick="editarCliente(${i})">✏</button>
+  <button class="btn-apagar" onclick="apagarCliente(${i})">🗑</button>
+`;
 
     div.append(btn,botoes);
     lista.appendChild(div);
