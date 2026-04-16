@@ -1,3 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ClientesMudancas</title>
+<style>
+body{
+  background:#f0f0f0;
+  text-align:center;
+}
+h1{
+  color:blue;
+}
+  
+</style>
+</head>
+<body>
+
 
 
 <!DOCTYPE html>
@@ -215,17 +233,14 @@ function estaPago(c){
     ultimo.getFullYear() === hoje.getFullYear()
   );
 }
-
 function diasRestantes(c){
   let hoje = new Date();
   let diaHoje = hoje.getDate();
 
-  if(c.vencimento >= diaHoje){
-    return c.vencimento - diaHoje;
-  } else {
-    let diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
-    return (diasNoMes - diaHoje) + c.vencimento;
-  }
+  let diff = c.vencimento - diaHoje;
+
+  // Se passou do vencimento → atraso (negativo)
+  return diff;
 }
 
 function ordenar(){
@@ -247,11 +262,31 @@ function render(){
     div.className="cliente";
 
     let btn = document.createElement("button");
-    btn.className="botao-grande "+(estaPago(c)?"pago":"nao-pago");
+    if(estaPago(c)){
+  btn.className = "botao-grande pago";
+}else{
+  if(dias === 0){
+    btn.className = "botao-grande";
+    btn.style.background = "orange";
+  }else{
+    btn.className = "botao-grande nao-pago";
+  }
+}
 
-    let dias = diasRestantes(c);
-    let status = dias >= 0 ? `Faltam ${dias} dias` : `Atrasado ${Math.abs(dias)} dias`;
+ let pago = estaPago(c);
+let status = "";
 
+if(pago){
+  status = "Em dia ✅";
+}else{
+  if(dias === 0){
+    status = "⚠️ Vence hoje";
+  }else if(dias > 0){
+    status = `Faltam ${dias} dias`;
+  }else{
+    status = `❌ Atrasado ${Math.abs(dias)} dias`;
+  }
+}
     btn.innerHTML = `<div>${c.nome}</div>
     <div class="info">Vence dia ${c.vencimento} • ${status}</div>`;
 
@@ -462,3 +497,12 @@ render();
 </script>
 </body>
 </html>
+
+<script>
+console.log("Funcionando!");
+  
+</script>
+
+</body>
+</html>
+  
